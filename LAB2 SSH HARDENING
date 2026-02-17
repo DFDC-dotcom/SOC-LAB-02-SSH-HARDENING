@@ -1,4 +1,21 @@
+# SOC Lab #2 – SSH Hardening & Baseline Security (Ubuntu Server)
 
+## Overview
+
+This lab demonstrates the implementation of secure configuration controls on an Ubuntu Server to reduce SSH attack surface and align with defensive security best practices.
+
+The objective was to simulate a real-world hardening process, validate security controls, and document the impact from a Blue Team perspective.
+
+---
+
+## Lab Architecture
+
+- Attacker Machine: Kali Linux
+- Target / SOC Machine: Ubuntu Server
+- Virtualization: VirtualBox
+- Network Segmentation:
+  - NAT (Internet access)
+  - Host-Only (Isolated attack simulation network)
 ---
 
 ## Initial Baseline (Before Hardening)
@@ -9,7 +26,56 @@
 - No firewall restrictions
 - No brute-force protection
 
+Scripts used: sudo systemctl status ssh
+sudo nano /etc/ssh/sshd_config
+Port 2222
+sudo sshd -t
+sudo systemctl restart ssh
+sudo ss -tulpn | grep ssh
 ---
+IN /etc/ssh/sshd_config on SOC (VM of Defense):
+PermitRootLogin - no
+PasswordAuthentication no
+PubkeyAuthentication yes
+
+
+IN KALI (Offensive VM)
+ssh-keygen -t ed25519 -a 100 -C "soc-lab-key"
+ssh-copy-id -p 2222 diogo@192.168.56.X
+
+---
+On Ubuntu = SOC 
+
+mkdir -p ~/.ssh
+nano ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 2222/tcp
+sudo ufw enable
+sudo ufw status verbose
+
+FAIL2BAN INSTALL AND CONFIG
+sudo apt install fail2ban -y
+sudo nano /etc/fail2ban/jail.local
+sudo systemctl restart fail2ban
+sudo fail2ban-client status sshd
+
+CONFIG:
+[sshd]
+enabled = true
+port = 2222
+backend = systemd
+maxretry = 3
+findtime = 600
+bantime = 3600
+
+ATTACK SIMULATIONS:
+ssh -p 2222 invaliduser@192.168.56.X at least 3 times 
+
+CHECK ON FAIL2BAN ON UBUNTU
+sudo fail2ban-client status sshd
 
 ## Hardening Measures Implemented
 
@@ -111,6 +177,7 @@ Reference: CIS Ubuntu Linux Benchmark
 - Implement auditd monitoring
 - Apply full CIS Level 1 baseline
 - Automate configuration using Ansible
+
 
 ---
 
