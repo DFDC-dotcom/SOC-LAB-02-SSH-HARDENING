@@ -1,0 +1,120 @@
+
+---
+
+## Initial Baseline (Before Hardening)
+
+- SSH running on default port 22 
+- Password authentication enabled
+- Root login potentially allowed
+- No firewall restrictions
+- No brute-force protection
+
+---
+
+## Hardening Measures Implemented
+
+### 1. SSH Configuration Hardening
+
+- Changed default SSH port (22 → 2222)
+- Disabled root login
+- Disabled password authentication
+- Enabled key-based authentication only
+- Limited authentication attempts (MaxAuthTries = 3)
+- Restricted allowed users
+
+### 2. SSH Key-Based Authentication
+
+- Generated ED25519 key pair
+- Deployed public key to authorized_keys
+- Disabled password-based access
+
+### 3. Firewall Configuration (UFW)
+
+- Default deny incoming
+- Default allow outgoing
+- Explicitly allowed port 2222 only
+
+### 4. Fail2Ban Deployment
+
+- Enabled SSH jail
+- Configured maxretry = 3
+- Configured bantime = 3600 seconds
+- Integrated with UFW for automated blocking
+
+---
+
+## Validation & Testing
+
+### Test 1 – Successful SSH Key Login
+Result: Access granted without password.
+
+### Test 2 – Password Authentication Attempt
+Result: Access denied.
+
+### Test 3 – Brute-Force Simulation (3+ failures)
+Result: Attacker IP automatically banned by Fail2Ban.
+
+### Test 4 – Firewall Inspection
+Result: Only port 2222 exposed.
+
+---
+
+## Security Improvements Achieved
+
+| Control | Risk Mitigated |
+|----------|---------------|
+| Disable root login | Privileged brute-force |
+| Non-default SSH port | Automated scanning noise |
+| Key-based authentication | Credential brute-force |
+| Fail2Ban | Automated incident response |
+| UFW restrictions | Attack surface reduction |
+
+---
+
+## CIS Benchmark Alignment (Selected Controls)
+
+- Enforced SSH protocol version 2
+- Disabled password authentication
+- Restricted user access
+- Reduced open network services
+- Enforced strong authentication mechanisms
+
+Reference: CIS Ubuntu Linux Benchmark
+
+---
+
+## Lessons Learned
+
+- Network segmentation is critical in lab design.
+- Systemd socket activation can override SSH port changes.
+- Log monitoring is essential for validating defensive controls.
+- Testing is mandatory after every configuration change.
+
+---
+
+## Skills Demonstrated
+
+- Linux server hardening
+- SSH secure configuration
+- Firewall management
+- Brute-force mitigation
+- Log analysis
+- Incident simulation
+- Defensive security mindset
+
+---
+
+## Future Improvements
+
+- Deploy centralized logging
+- Integrate with SIEM
+- Implement auditd monitoring
+- Apply full CIS Level 1 baseline
+- Automate configuration using Ansible
+
+---
+
+## Author
+
+Diogo [Last Name]
+Aspiring SOC / Cybersecurity Analyst
