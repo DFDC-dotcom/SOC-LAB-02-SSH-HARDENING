@@ -1,0 +1,132 @@
+# SOC Lab #3 – Log Monitoring & Threat Detection
+## Overview
+This lab demonstrates the implementation of log monitoring, threat detection logic, alert simulation, and file integrity monitoring on Ubuntu Server.
+
+The objective was to simulate attacker activity from Kali Linux and build detection mechanisms similar to entry-level SOC operations.
+
+This lab expands previous SSH hardening by introducing monitoring, automation, and alerting capabilities.
+---
+## Lab Architecture
+Environment:
+- Attacker: Kali Linux
+- Defender (SOC Node): Ubuntu Server
+- Network: Host-Only (192.168.56.0/24)
+- SSH running on port 2222
+- Fail2Ban active
+---
+# Phase 1 – Log Analysis & Threat Detection
+## Log Source Identification
+Primary authentication log:
+
+```bash
+/var/log/auth.log
+ ---
+# Phase 2 – Threat Simulation
+#Simulated brute-force attempts from Kali:
+
+ssh -p 2222 invaliduser@192.168.56.X
+---
+#Phase 3 – Manual Detection Engineering
+Detect Failed Logins
+
+grep "Failed password" /var/log/auth.log
+
+Count occurrences:
+grep "Failed password" /var/log/auth.log | wc -l
+
+Identify Attacking IP
+grep "Failed password" /var/log/auth.log | awk '{print $11}' | sort | uniq -c | sort -nr
+---
+#Phase 4 – SIEM Simulation Script
+Script: siem_simulation.sh
+
+Purpose:
+Aggregate SSH-related security events and generate a structured report.
+
+#!/bin/bash
+
+LOG="/var/log/auth.log"
+OUTPUT="/home/diogo/siem_report.txt"
+
+echo "=== SSH Failed Logins ===" > $OUTPUT
+grep "Failed password" $LOG >> $OUTPUT
+
+echo -e "\n=== Invalid Users ===" >> $OUTPUT
+grep "Invalid user" $LOG >> $OUTPUT
+
+echo -e "\n=== Successful Logins ===" >> $OUTPUT
+grep "Accepted publickey" $LOG >> $OUTPUT
+
+echo -e "\nReport generated on $(date)" >> $OUTPUT
+
+
+Make executable:
+chmod +x /home/diogo/siem_simulation.sh
+
+Run manually:
+./siem_simulation.sh
+
+
+Output file:
+siem_report.txt
+---
+#Phase 5 – Automated Monitoring (Cron Job)
+
+Configured cron to execute detection script every 5 minutes:
+crontab -e
+
+Cron entry:
+*/5 * * * * /home/diogo/siem_simulation.sh
+
+
+Verify:
+crontab -l
+---
+#Phase 6 – Email Alert Simulation
+
+Installed mail utilities:
+sudo apt install mailutils -y
+
+
+Postfix configured as:
+Local Only
+
+
+Test alert:
+echo "SOC Test Alert" | mail -s "SOC ALERT" diogo@localhost
+
+Inbox check:
+mail
+---
+#Phase 7 – Centralized Logging (rsyslog)
+
+Enabled TCP and UDP log reception on port 514:
+Edited:
+/etc/rsyslog.conf
+
+Activated modules:
+module(load="imudp")
+input(type="imudp" port="514")
+module(load="imtcp")
+input(type="imtcp" port="514")
+
+
+Restart:
+sudo systemctl restart rsyslog
+
+Verification:
+sudo ss -tulpn | grep 514
+---
+Phase 8 – File Integrity Monitoring (auditd)
+
+Installed:
+sudo apt install auditd audispd-plugins -y
+
+Added monitoring rule:
+sudo auditctl -w /etc/ssh/sshd_config -p wa -k ssh_changes
+
+List rules:
+sudo auditctl -l
+
+Search events:
+sudo /usr/sbin/ausearch -k ssh_changes
