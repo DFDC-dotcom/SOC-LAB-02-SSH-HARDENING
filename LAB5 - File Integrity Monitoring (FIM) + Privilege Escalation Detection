@@ -1,0 +1,105 @@
+Este laboratório simula um cenário de comprometimento de integridade num sistema Linux através da manipulação do ficheiro crítico /etc/passwd, criando um utilizador com privilégios equivalentes a root (UID 0).
+
+O objetivo é validar:
+Capacidade de deteção com File Integrity Monitoring (FIM)
+Classificação de severidade
+Análise técnica do impacto
+Mapeamento para ISO 27001 e NIST
+Implementação de medidas corretivas e preventivas
+
+🧱 Lab Environment
+Componente	Descrição
+Sistema Operativo	Ubuntu 24.04 LTS
+Monitorização	AIDE
+Logging adicional	auditd
+Recursos VM	2GB RAM
+🎯 Scenario
+
+Foi introduzida manualmente a seguinte entrada no ficheiro /etc/passwd:
+evil:x:0:0:evil:/root:/bin/bash
+
+
+Isto cria:
+Novo utilizador
+UID 0 (equivalente a root)
+Persistência privilegiada
+
+🔎 Detection Phase
+1️⃣ Verificação de integridade
+sudo aide --config /etc/aide/aide.conf --check
+
+Resultado observado
+Alteração detetada em /etc/passwd
+Mudança nas seguintes hashes:
+MD5
+SHA1
+SHA256
+SHA512
+Alteração de timestamps (mtime / ctime)
+
+Interpretação Técnica
+
+Qualquer alteração no conteúdo do ficheiro altera todas as funções de hash.
+Isto confirma modificação real do conteúdo e não apenas alteração de metadata.
+
+🧪 Investigation Steps
+Verificação de múltiplos UID 0
+grep ":0:" /etc/passwd
+
+
+Resultado:
+root
+evil
+
+Verificação de atividade
+last
+grep evil /var/log/auth.log
+
+
+Objetivo:
+Identificar login bem-sucedido
+Correlacionar com timestamps do ficheiro
+
+Timeline básica
+stat /etc/passwd
+
+
+Análise de:
+Modify time
+Change time
+
+📊 Risk Assessment
+Critério	Avaliação
+Integridade	Comprometida
+Privilégios	Escalação para root
+Persistência	Sim
+Impacto potencial	Total controlo do host
+Severidade	🔴 Critical
+
+Justificação: Alteração de controlo de identidade privilegiada.
+
+📚 Control Framework Mapping
+ISO 27001:2022
+
+A.5.15 – Access Control
+A.5.16 – Identity Management
+A.8.15 – Logging
+A.8.16 – Monitoring Activities
+
+NIST SP 800-53
+AC-2 – Account Management
+AC-6 – Least Privilege
+SI-7 – Integrity Monitoring
+AU-6 – Audit Review
+
+🛡️ Remediation Actions
+
+Remoção do utilizador malicioso
+Restauração do ficheiro original
+Atualização da baseline AIDE
+
+Implementação de regra auditd:
+sudo auditctl -w /etc/passwd -p wa -k passwd_changes
+
+Proteção adicional:
+sudo chattr +i /etc/passwd
